@@ -1,12 +1,12 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "AI 人生成长 RPG",
-  description: "一个记录现实行为并转化为 RPG 状态的人生成长系统",
+  title: "男神进化日记",
+  description: "一个记录现实行为并转化为 RPG 状态的男神进化系统",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "人生RPG",
+    title: "男神进化日记",
     statusBarStyle: "black-translucent",
   },
   other: {
@@ -22,7 +22,7 @@ export const metadata = {
 };
 
 export const viewport = {
-  themeColor: "#020617",
+  themeColor: "#F5FBFF",
 };
 
 export default function RootLayout({ children }) {

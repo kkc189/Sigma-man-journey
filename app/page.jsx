@@ -1,6 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  AppCard,
+  BottomNav,
+  StatBar,
+  StatusBadge,
+  XPBar,
+} from "../components/ui";
+import { HomeDashboard } from "../components/home-dashboard";
+import { RecordPage } from "../components/record-page";
 
 const initialForm = {
   sleepHours: "",
@@ -478,21 +487,21 @@ function WeeklySummary({ records }) {
   );
 
   return (
-    <div className="mt-5 rounded-md border border-zinc-800 bg-black p-4">
-      <h3 className="text-base font-semibold">本周总结</h3>
-      <div className="mt-3 space-y-2 text-sm leading-6 text-zinc-300">
-        <p>本周总 XP：{totalXp}</p>
-        <p>平均每日 XP：{averageXp}</p>
-        <p>
-          最佳状态日：{getDateLabel(bestRecord.date)}，
-          {getRecordXp(bestRecord)} XP
-        </p>
-        <p>
-          最低状态日：{getDateLabel(lowestRecord.date)}，
-          {getRecordXp(lowestRecord)} XP
-        </p>
-      </div>
-    </div>
+    <AppCard
+      eyebrow="WEEKLY SUMMARY"
+      title="本周总结"
+      className="mt-5"
+      contentClassName="space-y-2 text-sm leading-6 text-zinc-300"
+    >
+      <p>本周总 XP：{totalXp}</p>
+      <p>平均每日 XP：{averageXp}</p>
+      <p>
+        最佳状态日：{getDateLabel(bestRecord.date)}，{getRecordXp(bestRecord)} XP
+      </p>
+      <p>
+        最低状态日：{getDateLabel(lowestRecord.date)}，{getRecordXp(lowestRecord)} XP
+      </p>
+    </AppCard>
   );
 }
 
@@ -502,71 +511,92 @@ function DailySettlement({ form, xp, totalXp, buffs, debuffs }) {
   const reviewLines = getSettlementReview(form);
 
   return (
-    <section className="mx-auto mb-4 w-full max-w-md rounded-lg border border-zinc-700 bg-zinc-950 p-5 shadow-[0_0_24px_rgba(255,255,255,0.06)]">
-      <div className="mb-5 flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-medium text-zinc-500">游戏结算面板</p>
-          <h2 className="mt-1 text-2xl font-semibold">今日结算</h2>
+    <AppCard
+      eyebrow="游戏结算面板"
+      title="今日结算"
+      right={
+        <StatusBadge variant={xp >= 0 ? "buff" : "debuff"}>
+          {xp >= 0 ? "+" : ""}
+          {xp} XP
+        </StatusBadge>
+      }
+      className="mx-auto mb-4 w-full max-w-md"
+    >
+      <div className="space-y-3">
+        <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+          <p className="text-sm text-zinc-400">今日获得</p>
+          <p className="mt-1 text-3xl font-semibold">
+            {xp >= 0 ? "+" : ""}
+            {xp} XP
+          </p>
         </div>
-        <p className="rounded-md border border-zinc-800 bg-black px-3 py-2 text-sm font-semibold text-zinc-100">
-          {xp >= 0 ? "+" : ""}
-          {xp} XP
-        </p>
-      </div>
 
-      <div className="rounded-md border border-zinc-800 bg-black p-4">
-        <p className="text-sm text-zinc-400">今日获得</p>
-        <p className="mt-1 text-3xl font-semibold">
-          {xp >= 0 ? "+" : ""}
-          {xp} XP
-        </p>
-      </div>
+        <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+          <p className="text-sm font-medium text-zinc-100">
+            {levelInfo.level} {levelInfo.title}
+          </p>
+          <p className="mt-1 text-sm text-zinc-400">当前 XP：{totalXp}</p>
+          <XPBar
+            className="mt-3"
+            current={totalXp}
+            max={levelInfo.nextXp}
+            label="升级进度"
+            valueLabel={
+              levelInfo.nextLevel
+                ? `距离 ${levelInfo.nextLevel} 还差 ${xpToNextLevel} XP`
+                : "已经达到当前最高等级"
+            }
+          />
+        </div>
 
-      <div className="mt-3 rounded-md border border-zinc-800 bg-black p-4">
-        <p className="text-sm font-medium text-zinc-100">
-          {levelInfo.level} {levelInfo.title}
-        </p>
-        <p className="mt-1 text-sm text-zinc-400">当前 XP：{totalXp}</p>
-        <p className="mt-2 text-sm text-zinc-300">
-          {levelInfo.nextLevel
-            ? `距离 ${levelInfo.nextLevel} 还差 ${xpToNextLevel} XP`
-            : "已经达到当前最高等级"}
-        </p>
-      </div>
+        <div className="grid grid-cols-1 gap-3">
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-sm font-medium text-emerald-200">今日 Buff</p>
+              <span className="text-xs text-zinc-500">{buffs.length} 个</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {buffs.length === 0 ? (
+                <StatusBadge variant="neutral">暂无 Buff</StatusBadge>
+              ) : (
+                buffs.map((buff) => (
+                  <StatusBadge variant="buff" key={buff.name}>
+                    {buff.name}
+                  </StatusBadge>
+                ))
+              )}
+            </div>
+          </div>
 
-      <div className="mt-3 grid grid-cols-1 gap-3">
-        <div className="rounded-md border border-emerald-900 bg-black p-4">
-          <p className="text-sm font-medium text-emerald-200">今日 Buff</p>
-          <div className="mt-2 space-y-1 text-sm text-zinc-300">
-            {buffs.length === 0 ? (
-              <p>暂无 Buff</p>
-            ) : (
-              buffs.map((buff) => <p key={buff.name}>{buff.name}</p>)
-            )}
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-sm font-medium text-red-200">今日 Debuff</p>
+              <span className="text-xs text-zinc-500">{debuffs.length} 个</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {debuffs.length === 0 ? (
+                <StatusBadge variant="neutral">暂无 Debuff，状态稳定</StatusBadge>
+              ) : (
+                debuffs.map((debuff) => (
+                  <StatusBadge variant="debuff" key={debuff.name}>
+                    {debuff.name}
+                  </StatusBadge>
+                ))
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="rounded-md border border-red-950 bg-black p-4">
-          <p className="text-sm font-medium text-red-200">今日 Debuff</p>
-          <div className="mt-2 space-y-1 text-sm text-zinc-300">
-            {debuffs.length === 0 ? (
-              <p>暂无 Debuff，状态稳定</p>
-            ) : (
-              debuffs.map((debuff) => <p key={debuff.name}>{debuff.name}</p>)
-            )}
+        <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+          <p className="text-sm font-medium text-zinc-100">今日复盘</p>
+          <div className="mt-2 space-y-2 text-sm leading-6 text-zinc-300">
+            {reviewLines.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
           </div>
         </div>
       </div>
-
-      <div className="mt-3 rounded-md border border-zinc-800 bg-black p-4">
-        <p className="text-sm font-medium text-zinc-100">今日复盘</p>
-        <div className="mt-2 space-y-2 text-sm leading-6 text-zinc-300">
-          {reviewLines.map((line) => (
-            <p key={line}>{line}</p>
-          ))}
-        </div>
-      </div>
-    </section>
+    </AppCard>
   );
 }
 
@@ -583,10 +613,10 @@ function CalendarView({
   const weekLabels = ["一", "二", "三", "四", "五", "六", "日"];
 
   return (
-    <div className="rounded-lg border border-zinc-800 bg-black p-4">
+    <div className="rounded-[20px] border border-white/10 bg-black/30 p-4">
       <div className="mb-4 flex items-center justify-between gap-3">
         <button
-          className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200"
+          className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-zinc-200"
           type="button"
           onClick={onPreviousMonth}
         >
@@ -596,7 +626,7 @@ function CalendarView({
           {formatMonthYear(viewMonthDate)}
         </p>
         <button
-          className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-200"
+          className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-zinc-200"
           type="button"
           onClick={onNextMonth}
         >
@@ -618,23 +648,23 @@ function CalendarView({
 
           const record = recordsByDate[dateKey];
           const day = Number(dateKey.slice(8, 10));
-          const isToday = dateKey === todayKey;
-          const isSelected = dateKey === selectedDate;
-          const xp = record ? getRecordXp(record) : 0;
-          const hasRecord = Boolean(record);
-          const dotColor =
-            xp < 0 ? "bg-red-400" : xp >= 20 ? "bg-emerald-300" : "bg-zinc-400";
-          const cellClassName = [
-            "relative aspect-square rounded-md border px-1 py-1 text-center text-xs transition-colors",
-            hasRecord
-              ? "border-emerald-900/80 bg-zinc-900 text-zinc-100"
-              : "border-zinc-800 bg-zinc-950 text-zinc-500",
-            isToday ? "ring-1 ring-white/40" : "",
-            isSelected ? "bg-white text-black border-white" : "",
-            hasRecord && xp >= 20 ? "shadow-[0_0_12px_rgba(52,211,153,0.12)]" : "",
-          ]
-            .filter(Boolean)
-            .join(" ");
+            const isToday = dateKey === todayKey;
+            const isSelected = dateKey === selectedDate;
+            const xp = record ? getRecordXp(record) : 0;
+            const hasRecord = Boolean(record);
+            const dotColor =
+              xp < 0 ? "bg-red-400" : xp >= 20 ? "bg-emerald-300" : "bg-zinc-400";
+            const cellClassName = [
+              "relative aspect-square rounded-2xl border px-1 py-1 text-center text-xs transition-colors",
+              hasRecord
+                ? "border-emerald-900/80 bg-white/[0.04] text-zinc-100"
+                : "border-white/10 bg-black/30 text-zinc-500",
+              isToday ? "ring-1 ring-white/40" : "",
+              isSelected ? "border-white bg-white text-black" : "",
+              hasRecord && xp >= 20 ? "shadow-[0_0_12px_rgba(52,211,153,0.12)]" : "",
+            ]
+              .filter(Boolean)
+              .join(" ");
 
           return (
             <button
@@ -663,23 +693,20 @@ function DayDetailCard({ selectedDate, record, allRecords }) {
   const detail = buildSelectedDetail(record, allRecords);
 
   return (
-    <section className="mx-auto mt-4 w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-5 shadow-[0_0_20px_rgba(255,255,255,0.04)]">
-      <div className="mb-4">
-        <p className="text-xs font-medium text-zinc-500">人生存档</p>
-        <h2 className="mt-1 text-lg font-semibold">
-          {selectedDate ? `${formatMonthDay(selectedDate)}状态档案` : "状态档案"}
-        </h2>
-      </div>
-
+    <AppCard
+      eyebrow="人生存档"
+      title={selectedDate ? `${formatMonthDay(selectedDate)}状态档案` : "状态档案"}
+      className="mx-auto mt-4 w-full max-w-md"
+    >
       {!detail ? (
-        <p className="rounded-md border border-zinc-800 bg-black px-3 py-4 text-sm leading-6 text-zinc-400">
+        <p className="rounded-2xl border border-white/10 bg-black/30 px-3 py-4 text-sm leading-6 text-zinc-400">
           这一天还没有状态记录。
           <br />
           完成当天记录后，这里会生成你的人生 RPG 存档。
         </p>
       ) : (
         <div className="space-y-4">
-          <div className="rounded-md border border-zinc-800 bg-black p-4">
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
             <p className="text-sm font-medium text-zinc-100">现实行动</p>
             <div className="mt-3 space-y-2 text-sm leading-6 text-zinc-300">
               <p>睡眠：{detailRecordValue(record.sleepHours, "小时")}</p>
@@ -690,64 +717,70 @@ function DayDetailCard({ selectedDate, record, allRecords }) {
             </div>
           </div>
 
-          <div className="rounded-md border border-zinc-800 bg-black p-4">
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
             <p className="text-sm font-medium text-zinc-100">今日行动</p>
             <p className="mt-2 text-sm leading-6 text-zinc-300">
               {record.actions || "暂无行动记录"}
             </p>
           </div>
 
-          <div className="rounded-md border border-zinc-800 bg-black p-4">
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
             <div className="flex items-center justify-between gap-4">
               <p className="text-sm font-medium text-zinc-100">获得 XP</p>
-              <p className="text-sm font-semibold text-zinc-100">
+              <StatusBadge variant={Number(record.xp) >= 0 ? "buff" : "debuff"}>
                 {detailRecordSignedXp(record.xp)}
-              </p>
+              </StatusBadge>
             </div>
-            <div className="mt-3 rounded-md border border-zinc-800 bg-zinc-950 p-3">
-              <p className="text-xs text-zinc-500">
-                {detail.levelInfo.level} {detail.levelInfo.title}
-              </p>
-              <p className="mt-1 text-sm text-zinc-300">
-                当前 XP：{detail.cumulativeXp}
-              </p>
-              <div className="mt-2 h-2 w-full rounded-full bg-zinc-800">
-                <div
-                  className="h-2 rounded-full bg-white"
-                  style={{ width: `${detail.levelProgressPercent}%` }}
-                />
-              </div>
-              <p className="mt-1 text-sm text-zinc-300">
-                {detail.levelInfo.nextLevel
+            <XPBar
+              className="mt-3"
+              current={detail.cumulativeXp}
+              max={detail.levelInfo.nextXp}
+              label={`${detail.levelInfo.level} ${detail.levelInfo.title}`}
+              valueLabel={
+                detail.levelInfo.nextLevel
                   ? `距离 ${detail.levelInfo.nextLevel} 还差 ${detail.xpToNextLevel} XP`
-                  : "已经达到当前最高等级"}
-              </p>
-            </div>
+                  : "已经达到当前最高等级"
+              }
+            />
           </div>
 
-          <div className="rounded-md border border-emerald-900 bg-black p-4">
-            <p className="text-sm font-medium text-emerald-200">状态 Buff</p>
-            <div className="mt-2 space-y-1 text-sm leading-6 text-zinc-300">
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-sm font-medium text-emerald-200">状态 Buff</p>
+              <span className="text-xs text-zinc-500">{record.buffs.length} 个</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
               {record.buffs.length === 0 ? (
-                <p>暂无 Buff</p>
+                <StatusBadge variant="neutral">暂无 Buff</StatusBadge>
               ) : (
-                record.buffs.map((buff, index) => <p key={`${buff}-${index}`}>{buff}</p>)
+                record.buffs.map((buff, index) => (
+                  <StatusBadge variant="buff" key={`${buff}-${index}`}>
+                    {buff}
+                  </StatusBadge>
+                ))
               )}
             </div>
           </div>
 
-          <div className="rounded-md border border-red-950 bg-black p-4">
-            <p className="text-sm font-medium text-red-200">状态 Debuff</p>
-            <div className="mt-2 space-y-1 text-sm leading-6 text-zinc-300">
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-sm font-medium text-red-200">状态 Debuff</p>
+              <span className="text-xs text-zinc-500">{record.debuffs.length} 个</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
               {record.debuffs.length === 0 ? (
-                <p>暂无 Debuff，状态稳定</p>
+                <StatusBadge variant="neutral">暂无 Debuff，状态稳定</StatusBadge>
               ) : (
-                record.debuffs.map((debuff, index) => <p key={`${debuff}-${index}`}>{debuff}</p>)
+                record.debuffs.map((debuff, index) => (
+                  <StatusBadge variant="debuff" key={`${debuff}-${index}`}>
+                    {debuff}
+                  </StatusBadge>
+                ))
               )}
             </div>
           </div>
 
-          <div className="rounded-md border border-zinc-800 bg-black p-4">
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
             <p className="text-sm font-medium text-zinc-100">结算复盘</p>
             <div className="mt-2 space-y-2 text-sm leading-6 text-zinc-300">
               {detail.reviewLines.length === 0 ? (
@@ -759,7 +792,7 @@ function DayDetailCard({ selectedDate, record, allRecords }) {
           </div>
         </div>
       )}
-    </section>
+    </AppCard>
   );
 }
 
@@ -776,43 +809,88 @@ function detailRecordSignedXp(xp) {
   return `${number >= 0 ? "+" : ""}${number} XP`;
 }
 
-const mobilePages = [
-  { id: "home", label: "首页" },
-  { id: "record", label: "记录" },
-  { id: "status", label: "状态" },
-  { id: "growth", label: "成长" },
-  { id: "calendar", label: "日历" },
-];
-
-function MobileTabBar({ activePage, onChange }) {
-  return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-800 bg-black/95 backdrop-blur">
-      <div className="mx-auto grid w-full max-w-md grid-cols-5 gap-1 px-3 py-2">
-        {mobilePages.map((page) => {
-          const isActive = page.id === activePage;
-
-          return (
-            <button
-              key={page.id}
-              className={[
-                "rounded-md px-2 py-2 text-xs font-medium transition-colors",
-                isActive
-                  ? "bg-white text-black"
-                  : "border border-zinc-800 bg-zinc-950 text-zinc-400",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              type="button"
-              onClick={() => onChange(page.id)}
-            >
-              {page.label}
-            </button>
-          );
-        })}
-      </div>
-    </nav>
-  );
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
 }
+
+function getAttributeScores(form, totalXp, buffs, debuffs, noWorkoutDays) {
+  const sleepHours = Number(form.sleepHours);
+  const workoutMinutes = Number(form.workoutMinutes);
+  const phoneHours = Number(form.phoneHours);
+  const mood = Number(form.mood);
+  const streakDays = Number(form.noRewardDays ?? form.streak ?? form.streakDays);
+
+  const energy = clamp(
+    35 +
+      (Number.isFinite(sleepHours) ? sleepHours * 5 : 0) +
+      (Number.isFinite(workoutMinutes) ? workoutMinutes / 4 : 0) -
+      (Number.isFinite(phoneHours) ? phoneHours * 4 : 0),
+    8,
+    100,
+  );
+
+  const focus = clamp(
+    42 +
+      (Number.isFinite(phoneHours) ? (6 - phoneHours) * 9 : 0) +
+      (buffs.some((item) => item.name.includes("专注")) ? 10 : 0) -
+      debuffs.length * 5,
+    8,
+    100,
+  );
+
+  const recovery = clamp(
+    30 +
+      (Number.isFinite(sleepHours) ? sleepHours * 8 : 0) +
+      (noWorkoutDays === 0 ? 8 : 0) +
+      (buffs.some((item) => item.name.includes("恢复")) ? 12 : 0),
+    8,
+    100,
+  );
+
+  const execution = clamp(
+    30 +
+      (Number.isFinite(workoutMinutes) ? workoutMinutes * 0.8 : 0) +
+      (Number.isFinite(streakDays) ? streakDays * 2 : 0) +
+      Math.min(totalXp / 4, 25),
+    8,
+    100,
+  );
+
+  const moodStability = clamp(
+    40 +
+      (Number.isFinite(mood) ? mood * 6 : 0) -
+      debuffs.length * 4 +
+      (buffs.some((item) => item.name.includes("情绪")) ? 10 : 0),
+    8,
+    100,
+  );
+
+  return [
+    { label: "能量", value: energy, accent: "from-amber-300 to-orange-500" },
+    { label: "专注", value: focus, accent: "from-sky-300 to-cyan-400" },
+    { label: "恢复", value: recovery, accent: "from-emerald-300 to-lime-400" },
+    { label: "执行力", value: execution, accent: "from-fuchsia-300 to-pink-500" },
+    { label: "情绪稳定", value: moodStability, accent: "from-violet-300 to-indigo-400" },
+  ];
+}
+
+const dashboardMockData = {
+  statusScore: 78,
+  level: "Lv. 8",
+  xp: 320,
+  nextXp: 500,
+  title: "轻微觉醒牛马",
+  features: [
+    { label: "睡眠", icon: "☾" },
+    { label: "健身", icon: "▮▮" },
+    { label: "饮食", icon: "◌" },
+    { label: "手机", icon: "▯" },
+    { label: "情绪", icon: "☺" },
+    { label: "执行力", icon: "☑" },
+  ],
+  buffs: ["早起 +20 XP", "健身达标 +30 XP", "专注时刻 +15 XP"],
+  debuffs: ["熬夜 -20 XP", "手机超时 -15 XP"],
+};
 
 export default function Home() {
   const [form, setForm] = useState(initialForm);
@@ -829,9 +907,15 @@ export default function Home() {
     new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   );
   const levelInfo = getLevelInfo(totalXp);
-  const progressPercent = Math.min((totalXp / levelInfo.nextXp) * 100, 100);
   const { buffs, debuffs } = getTodayStatuses(form, noWorkoutDays);
   const statusSummary = getStatusSummary(buffs.length, debuffs.length);
+  const attributeScores = getAttributeScores(
+    form,
+    totalXp,
+    buffs,
+    debuffs,
+    noWorkoutDays,
+  );
   const normalizedDailyRecords = dailyRecords
     .map(normalizeDailyRecord)
     .filter(Boolean)
@@ -1082,49 +1166,146 @@ export default function Home() {
     setViewMonthDate(parseDateKey(dateKey));
   }
 
+  if (activePage === "home") {
+    return <HomeDashboard onNavigate={setActivePage} />;
+  }
+
+  if (activePage === "record") {
+    return <RecordPage onNavigate={setActivePage} />;
+  }
+
   return (
-    <main className="min-h-screen bg-black px-4 py-6 pb-24 text-white">
+    <main
+      className={
+        activePage === "home"
+          ? "min-h-screen bg-[#EEF7FF] px-0 py-0 pb-28 text-[#0D1B33]"
+          : "min-h-screen bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_32%),linear-gradient(180deg,#050505_0%,#09090b_38%,#000_100%)] px-4 py-5 pb-28 text-white"
+      }
+    >
       {activePage === "home" && (
-        <section className="mx-auto w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-5">
-          <div className="flex items-center justify-between gap-4">
+        <div className="mx-auto min-h-screen w-full max-w-[430px] bg-white px-5 pb-4 pt-6 shadow-[0_24px_80px_rgba(10,141,255,0.18)] sm:my-6 sm:rounded-[34px]">
+          <header className="mb-6 flex items-center justify-between">
+            <h1 className="text-[27px] font-black tracking-tight text-[#0B2C7E]">
+              男神进化日记
+            </h1>
+            <button
+              aria-label="通知"
+              className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[#0B2C7E] shadow-[0_10px_24px_rgba(10,141,255,0.12)]"
+              type="button"
+            >
+              <span className="text-3xl leading-none">♧</span>
+              <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[#0A8DFF]" />
+            </button>
+          </header>
+
+          <section className="relative overflow-hidden rounded-[24px] border border-[#B9D8FF] bg-[linear-gradient(135deg,#F8FCFF_0%,#EAF5FF_58%,#FFFFFF_100%)] p-5 shadow-[0_18px_44px_rgba(10,141,255,0.12)]">
+            <div className="relative z-10 max-w-[58%]">
+              <div className="flex items-center gap-2 text-base font-bold text-[#0B2C7E]">
+                <span>今日状态</span>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full border border-[#9BB9DD] text-xs text-[#8AA5C8]">
+                  i
+                </span>
+              </div>
+
+              <div className="mt-3 flex items-end gap-4">
+                <p className="text-[76px] font-black leading-[0.88] tracking-tight text-[#0B2C7E]">
+                  {dashboardMockData.statusScore}
+                </p>
+                <p className="pb-2 text-[25px] font-black text-[#0A8DFF]">
+                  {dashboardMockData.level}
+                </p>
+              </div>
+
+              <p className="mt-6 text-[15px] font-bold text-[#0D1B33]">
+                {dashboardMockData.xp} / {dashboardMockData.nextXp} XP
+              </p>
+              <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-[#C8DDF6]">
+                <div
+                  className="h-full rounded-full bg-[linear-gradient(90deg,#0A8DFF,#1DA1FF)]"
+                  style={{
+                    width: `${(dashboardMockData.xp / dashboardMockData.nextXp) * 100}%`,
+                  }}
+                />
+              </div>
+
+              <div className="mt-6 rounded-[20px] border border-[#D4E6FA] bg-white/75 px-4 py-3 shadow-[0_10px_24px_rgba(10,141,255,0.08)]">
+                <p className="text-sm font-semibold text-[#64748B]">今日称号</p>
+                <p className="mt-1 text-[23px] font-black text-[#0A8DFF]">
+                  {dashboardMockData.title}
+                </p>
+              </div>
+            </div>
+
+            <img
+              alt="男神牛角色"
+              className="absolute bottom-0 right-0 z-0 h-[255px] w-[178px] object-contain object-bottom"
+              src="/cow-mascot.png"
+            />
+          </section>
+
+          <section className="mt-4 grid grid-cols-3 gap-3">
+            {dashboardMockData.features.map((feature) => (
+              <button
+                className="flex h-[104px] flex-col items-center justify-center rounded-[20px] border border-[#DCEBFF] bg-white text-[#0A8DFF] shadow-[0_12px_26px_rgba(10,141,255,0.08)] transition-transform hover:-translate-y-0.5"
+                key={feature.label}
+                type="button"
+              >
+                <span className="text-[34px] font-black leading-none">
+                  {feature.icon}
+                </span>
+                <span className="mt-3 text-base font-black">{feature.label}</span>
+              </button>
+            ))}
+          </section>
+
+          <section className="mt-4 rounded-[20px] border border-[#DCEBFF] bg-white px-4 py-4 shadow-[0_12px_30px_rgba(10,141,255,0.08)]">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-black text-[#0B2C7E]">Buff / Debuff</h2>
+              <button
+                className="text-sm font-bold text-[#0A8DFF]"
+                type="button"
+              >
+                查看全部 〉
+              </button>
+            </div>
+
             <div>
-              <p className="text-xs font-medium text-zinc-500">角色状态卡</p>
-              <h1 className="mt-1 text-2xl font-semibold">
-                {levelInfo.level} {levelInfo.title}
-              </h1>
+              <p className="text-base font-black text-[#11B94A]">Buff</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {dashboardMockData.buffs.map((buff) => (
+                  <span
+                    className="rounded-xl bg-[#E4F8E9] px-4 py-2 text-sm font-bold text-[#049B3D]"
+                    key={buff}
+                  >
+                    {buff}
+                  </span>
+                ))}
+              </div>
             </div>
-            <div className="text-4xl leading-none">{levelInfo.avatar}</div>
-          </div>
 
-          <div className="mt-5">
-            <div className="mb-2 flex items-center justify-between text-sm">
-              <span className="text-zinc-400">当前 XP</span>
-              <span className="font-medium text-zinc-100">
-                {totalXp} / {levelInfo.nextXp} XP
-              </span>
+            <div className="mt-4">
+              <p className="text-base font-black text-[#FF1F1F]">Debuff</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {dashboardMockData.debuffs.map((debuff) => (
+                  <span
+                    className="rounded-xl bg-[#FFE9E9] px-4 py-2 text-sm font-bold text-[#F01818]"
+                    key={debuff}
+                  >
+                    {debuff}
+                  </span>
+                ))}
+              </div>
             </div>
-            <div className="h-2 w-full rounded-full bg-zinc-800">
-              <div
-                className="h-2 rounded-full bg-white"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-          </div>
+          </section>
 
-          <p className="mt-4 text-sm leading-6 text-zinc-300">{levelInfo.status}</p>
-
-          <div className="mt-4 rounded-md border border-zinc-800 bg-black px-3 py-3">
-            <p className="text-xs font-medium text-zinc-500">今日状态评价</p>
-            <p className="mt-1 text-sm leading-6 text-zinc-200">{statusSummary}</p>
-          </div>
-
-          {todayXpEarned !== null && (
-            <p className="mt-3 rounded-md border border-zinc-800 bg-black px-3 py-2 text-sm text-zinc-200">
-              今日获得 {todayXpEarned >= 0 ? "+" : ""}
-              {todayXpEarned} XP
-            </p>
-          )}
-        </section>
+          <button
+            className="mt-5 h-14 w-full rounded-[20px] bg-[linear-gradient(90deg,#0A8DFF,#0077FF)] text-xl font-black text-white shadow-[0_16px_32px_rgba(10,141,255,0.3)]"
+            type="button"
+            onClick={() => setActivePage("status")}
+          >
+            查看每日结算
+          </button>
+        </div>
       )}
 
       {activePage === "status" && (
@@ -1139,12 +1320,7 @@ export default function Home() {
             />
           )}
 
-          <section className="mx-auto mb-4 w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-5">
-            <div className="mb-4">
-              <p className="text-xs font-medium text-zinc-500">今日状态 Buff</p>
-              <h2 className="mt-1 text-lg font-semibold">状态栏卡片</h2>
-            </div>
-
+          <AppCard eyebrow="今日状态 Buff" title="状态栏卡片">
             <div className="space-y-5">
               <div>
                 <div className="mb-2 flex items-center justify-between text-sm">
@@ -1152,26 +1328,16 @@ export default function Home() {
                   <span className="text-zinc-500">{buffs.length} 个</span>
                 </div>
 
-                <div className="space-y-2">
-                  {buffs.length === 0 && (
-                    <p className="rounded-md border border-zinc-800 bg-black px-3 py-3 text-sm text-zinc-500">
-                      暂无 Buff
-                    </p>
-                  )}
-
-                  {buffs.map((buff) => (
-                    <div
-                      className="rounded-md border border-emerald-800 bg-black px-3 py-3"
-                      key={buff.name}
-                    >
-                      <p className="text-sm font-medium text-emerald-200">
+                <div className="flex flex-wrap gap-2">
+                  {buffs.length === 0 ? (
+                    <StatusBadge variant="neutral">暂无 Buff</StatusBadge>
+                  ) : (
+                    buffs.map((buff) => (
+                      <StatusBadge variant="buff" key={buff.name}>
                         {buff.name}
-                      </p>
-                      <p className="mt-1 text-sm text-zinc-400">
-                        {buff.description}
-                      </p>
-                    </div>
-                  ))}
+                      </StatusBadge>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -1181,42 +1347,27 @@ export default function Home() {
                   <span className="text-zinc-500">{debuffs.length} 个</span>
                 </div>
 
-                <div className="space-y-2">
-                  {debuffs.length === 0 && (
-                    <p className="rounded-md border border-zinc-800 bg-black px-3 py-3 text-sm text-zinc-500">
-                      暂无 Debuff
-                    </p>
-                  )}
-
-                  {debuffs.map((debuff) => (
-                    <div
-                      className="rounded-md border border-red-900 bg-black px-3 py-3"
-                      key={debuff.name}
-                    >
-                      <p className="text-sm font-medium text-red-200">
+                <div className="flex flex-wrap gap-2">
+                  {debuffs.length === 0 ? (
+                    <StatusBadge variant="neutral">暂无 Debuff</StatusBadge>
+                  ) : (
+                    debuffs.map((debuff) => (
+                      <StatusBadge variant="debuff" key={debuff.name}>
                         {debuff.name}
-                      </p>
-                      <p className="mt-1 text-sm text-zinc-400">
-                        {debuff.description}
-                      </p>
-                    </div>
-                  ))}
+                      </StatusBadge>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
-          </section>
+          </AppCard>
         </>
       )}
 
       {activePage === "growth" && (
-        <section className="mx-auto w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-5">
-          <div className="mb-5">
-            <p className="text-xs font-medium text-zinc-500">XP 趋势面板</p>
-            <h2 className="mt-1 text-lg font-semibold">成长趋势</h2>
-          </div>
-
+        <AppCard eyebrow="XP 趋势面板" title="成长趋势" className="mx-auto w-full max-w-md">
           {dailyRecords.length === 0 ? (
-            <p className="rounded-md border border-zinc-800 bg-black px-3 py-4 text-sm leading-6 text-zinc-400">
+            <p className="rounded-2xl border border-white/10 bg-black/30 px-3 py-4 text-sm leading-6 text-zinc-400">
               还没有成长数据。
               <br />
               完成今天记录后，这里会显示你的 XP 趋势。
@@ -1227,20 +1378,17 @@ export default function Home() {
               <WeeklySummary records={dailyRecords} />
             </>
           )}
-        </section>
+        </AppCard>
       )}
 
       {activePage === "calendar" && (
         <>
-          <section className="mx-auto mb-4 w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-5">
-            <div className="mb-4">
-              <p className="text-xs font-medium text-zinc-500">历史回看</p>
-              <h2 className="mt-1 text-lg font-semibold">状态日历</h2>
-              <p className="mt-2 text-sm leading-6 text-zinc-400">
-                查看你过去每一天的人生 RPG 存档。
-              </p>
-            </div>
-
+          <AppCard
+            eyebrow="历史回看"
+            title="状态日历"
+            description="查看你过去每一天的人生 RPG 存档。"
+            className="mx-auto mb-4 w-full max-w-md"
+          >
             <CalendarView
               viewMonthDate={viewMonthDate}
               selectedDate={selectedDate}
@@ -1250,7 +1398,7 @@ export default function Home() {
               onNextMonth={handleNextMonth}
               onSelectDate={handleSelectDate}
             />
-          </section>
+          </AppCard>
 
           <DayDetailCard
             selectedDate={selectedDate}
@@ -1260,143 +1408,7 @@ export default function Home() {
         </>
       )}
 
-      {activePage === "record" && (
-        <>
-          <section className="mx-auto w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-5">
-            <div className="mb-6">
-              <h1 className="text-2xl font-semibold">人生成长记录</h1>
-              <p className="mt-2 text-sm text-zinc-400">记录今天，保持前进。</p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <label className="block">
-                <span className="mb-2 block text-sm text-zinc-300">今天睡眠时间</span>
-                <input
-                  className="w-full rounded-md border border-zinc-800 bg-black px-3 py-3 text-base text-white outline-none focus:border-zinc-500"
-                  name="sleepHours"
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  placeholder="例如：7.5 小时"
-                  value={form.sleepHours}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-2 block text-sm text-zinc-300">今天健身多久</span>
-                <input
-                  className="w-full rounded-md border border-zinc-800 bg-black px-3 py-3 text-base text-white outline-none focus:border-zinc-500"
-                  name="workoutMinutes"
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="例如：45 分钟"
-                  value={form.workoutMinutes}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-2 block text-sm text-zinc-300">今天手机使用时间</span>
-                <input
-                  className="w-full rounded-md border border-zinc-800 bg-black px-3 py-3 text-base text-white outline-none focus:border-zinc-500"
-                  name="phoneHours"
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  placeholder="例如：3 小时"
-                  value={form.phoneHours}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-2 block text-sm text-zinc-300">今天做了什么</span>
-                <textarea
-                  className="min-h-28 w-full resize-none rounded-md border border-zinc-800 bg-black px-3 py-3 text-base text-white outline-none focus:border-zinc-500"
-                  name="todayNote"
-                  placeholder="简单写几句"
-                  value={form.todayNote}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-2 block text-sm text-zinc-300">今天心情（1-10）</span>
-                <input
-                  className="w-full rounded-md border border-zinc-800 bg-black px-3 py-3 text-base text-white outline-none focus:border-zinc-500"
-                  name="mood"
-                  type="number"
-                  min="1"
-                  max="10"
-                  step="1"
-                  placeholder="例如：8"
-                  value={form.mood}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-2 block text-sm text-zinc-300">
-                  成为男神的天数
-                </span>
-                <input
-                  className="w-full rounded-md border border-zinc-800 bg-black px-3 py-3 text-base text-white outline-none focus:border-zinc-500"
-                  name="noRewardDays"
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="例如：12"
-                  value={form.noRewardDays}
-                  onChange={handleChange}
-                />
-              </label>
-
-              <button
-                className="mt-2 w-full rounded-md bg-white px-4 py-3 text-base font-medium text-black"
-                type="submit"
-              >
-                保存今天
-              </button>
-
-              {saved && <p className="text-center text-sm text-zinc-300">今天已记录</p>}
-
-              <button
-                className="w-full rounded-md border border-zinc-700 px-4 py-3 text-base font-medium text-white"
-                type="button"
-                onClick={generateReview}
-              >
-                生成今日复盘
-              </button>
-            </form>
-          </section>
-
-          {reviewItems.length > 0 && (
-            <section className="mx-auto mt-4 w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-5">
-              <div className="mb-4">
-                <p className="text-xs font-medium text-zinc-500">
-                  晚间复盘系统
-                </p>
-                <h2 className="mt-1 text-lg font-semibold">今日状态分析</h2>
-              </div>
-
-              <div className="space-y-3">
-                {reviewItems.map((item) => (
-                  <p
-                    className="rounded-md border border-zinc-800 bg-black px-3 py-3 text-sm leading-6 text-zinc-200"
-                    key={item}
-                  >
-                    {item}
-                  </p>
-                ))}
-              </div>
-            </section>
-          )}
-        </>
-      )}
-
-      <MobileTabBar activePage={activePage} onChange={setActivePage} />
+      <BottomNav activePage={activePage} onChange={setActivePage} />
     </main>
   );
 }

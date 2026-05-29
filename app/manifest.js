@@ -1,8 +1,8 @@
 export default function manifest() {
   return {
-    name: "AI 人生成长 RPG",
-    short_name: "人生RPG",
-    description: "一个记录现实行为并转化为 RPG 状态的人生成长系统",
+    name: "男神进化日记",
+    short_name: "男神日记",
+    description: "一个记录现实行为并转化为 RPG 状态的男神进化系统",
     start_url: "/",
     display: "standalone",
     background_color: "#020617",
