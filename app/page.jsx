@@ -776,6 +776,44 @@ function detailRecordSignedXp(xp) {
   return `${number >= 0 ? "+" : ""}${number} XP`;
 }
 
+const mobilePages = [
+  { id: "home", label: "首页" },
+  { id: "record", label: "记录" },
+  { id: "status", label: "状态" },
+  { id: "growth", label: "成长" },
+  { id: "calendar", label: "日历" },
+];
+
+function MobileTabBar({ activePage, onChange }) {
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-800 bg-black/95 backdrop-blur">
+      <div className="mx-auto grid w-full max-w-md grid-cols-5 gap-1 px-3 py-2">
+        {mobilePages.map((page) => {
+          const isActive = page.id === activePage;
+
+          return (
+            <button
+              key={page.id}
+              className={[
+                "rounded-md px-2 py-2 text-xs font-medium transition-colors",
+                isActive
+                  ? "bg-white text-black"
+                  : "border border-zinc-800 bg-zinc-950 text-zinc-400",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              type="button"
+              onClick={() => onChange(page.id)}
+            >
+              {page.label}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
 export default function Home() {
   const [form, setForm] = useState(initialForm);
   const [saved, setSaved] = useState(false);
@@ -784,6 +822,7 @@ export default function Home() {
   const [todayXpEarned, setTodayXpEarned] = useState(null);
   const [noWorkoutDays, setNoWorkoutDays] = useState(0);
   const [dailyRecords, setDailyRecords] = useState([]);
+  const [activePage, setActivePage] = useState("home");
   const todayKey = getDateKey(new Date());
   const [selectedDate, setSelectedDate] = useState(todayKey);
   const [viewMonthDate, setViewMonthDate] = useState(
@@ -992,6 +1031,7 @@ export default function Home() {
     setDailyRecords(nextDailyRecords);
     setSelectedDate(today);
     setViewMonthDate(parseDateKey(today));
+    setActivePage("status");
     setSaved(true);
   }
 
@@ -1043,302 +1083,320 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-4 py-8 text-white">
-      <section className="mx-auto mb-4 w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-5">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-medium text-zinc-500">角色状态卡</p>
-            <h1 className="mt-1 text-2xl font-semibold">
-              {levelInfo.level} {levelInfo.title}
-            </h1>
+    <main className="min-h-screen bg-black px-4 py-6 pb-24 text-white">
+      {activePage === "home" && (
+        <section className="mx-auto w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-5">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-medium text-zinc-500">角色状态卡</p>
+              <h1 className="mt-1 text-2xl font-semibold">
+                {levelInfo.level} {levelInfo.title}
+              </h1>
+            </div>
+            <div className="text-4xl leading-none">{levelInfo.avatar}</div>
           </div>
-          <div className="text-4xl leading-none">{levelInfo.avatar}</div>
-        </div>
 
-        <div className="mt-5">
-          <div className="mb-2 flex items-center justify-between text-sm">
-            <span className="text-zinc-400">当前 XP</span>
-            <span className="font-medium text-zinc-100">
-              {totalXp} / {levelInfo.nextXp} XP
-            </span>
-          </div>
-          <div className="h-2 w-full rounded-full bg-zinc-800">
-            <div
-              className="h-2 rounded-full bg-white"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-        </div>
-
-        <p className="mt-4 text-sm leading-6 text-zinc-300">{levelInfo.status}</p>
-
-        <div className="mt-4 rounded-md border border-zinc-800 bg-black px-3 py-3">
-          <p className="text-xs font-medium text-zinc-500">今日状态评价</p>
-          <p className="mt-1 text-sm leading-6 text-zinc-200">{statusSummary}</p>
-        </div>
-
-        {todayXpEarned !== null && (
-          <p className="mt-3 rounded-md border border-zinc-800 bg-black px-3 py-2 text-sm text-zinc-200">
-            今日获得 {todayXpEarned >= 0 ? "+" : ""}
-            {todayXpEarned} XP
-          </p>
-        )}
-      </section>
-
-      {saved && todayXpEarned !== null && (
-        <DailySettlement
-          form={form}
-          xp={todayXpEarned}
-          totalXp={totalXp}
-          buffs={buffs}
-          debuffs={debuffs}
-        />
-      )}
-
-      <section className="mx-auto mb-4 w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-5">
-        <div className="mb-4">
-          <p className="text-xs font-medium text-zinc-500">今日状态 Buff</p>
-          <h2 className="mt-1 text-lg font-semibold">状态栏卡片</h2>
-        </div>
-
-        <div className="space-y-5">
-          <div>
+          <div className="mt-5">
             <div className="mb-2 flex items-center justify-between text-sm">
-              <span className="text-zinc-300">当前 Buff</span>
-              <span className="text-zinc-500">{buffs.length} 个</span>
+              <span className="text-zinc-400">当前 XP</span>
+              <span className="font-medium text-zinc-100">
+                {totalXp} / {levelInfo.nextXp} XP
+              </span>
             </div>
-
-            <div className="space-y-2">
-              {buffs.length === 0 && (
-                <p className="rounded-md border border-zinc-800 bg-black px-3 py-3 text-sm text-zinc-500">
-                  暂无 Buff
-                </p>
-              )}
-
-              {buffs.map((buff) => (
-                <div
-                  className="rounded-md border border-emerald-800 bg-black px-3 py-3"
-                  key={buff.name}
-                >
-                  <p className="text-sm font-medium text-emerald-200">
-                    {buff.name}
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-400">
-                    {buff.description}
-                  </p>
-                </div>
-              ))}
+            <div className="h-2 w-full rounded-full bg-zinc-800">
+              <div
+                className="h-2 rounded-full bg-white"
+                style={{ width: `${progressPercent}%` }}
+              />
             </div>
           </div>
 
-          <div>
-            <div className="mb-2 flex items-center justify-between text-sm">
-              <span className="text-zinc-300">当前 Debuff</span>
-              <span className="text-zinc-500">{debuffs.length} 个</span>
-            </div>
+          <p className="mt-4 text-sm leading-6 text-zinc-300">{levelInfo.status}</p>
 
-            <div className="space-y-2">
-              {debuffs.length === 0 && (
-                <p className="rounded-md border border-zinc-800 bg-black px-3 py-3 text-sm text-zinc-500">
-                  暂无 Debuff
-                </p>
-              )}
-
-              {debuffs.map((debuff) => (
-                <div
-                  className="rounded-md border border-red-900 bg-black px-3 py-3"
-                  key={debuff.name}
-                >
-                  <p className="text-sm font-medium text-red-200">
-                    {debuff.name}
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-400">
-                    {debuff.description}
-                  </p>
-                </div>
-              ))}
-            </div>
+          <div className="mt-4 rounded-md border border-zinc-800 bg-black px-3 py-3">
+            <p className="text-xs font-medium text-zinc-500">今日状态评价</p>
+            <p className="mt-1 text-sm leading-6 text-zinc-200">{statusSummary}</p>
           </div>
-        </div>
-      </section>
 
-      <section className="mx-auto mb-4 w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-5">
-        <div className="mb-5">
-          <p className="text-xs font-medium text-zinc-500">XP 趋势面板</p>
-          <h2 className="mt-1 text-lg font-semibold">成长趋势</h2>
-        </div>
-
-        {dailyRecords.length === 0 ? (
-          <p className="rounded-md border border-zinc-800 bg-black px-3 py-4 text-sm leading-6 text-zinc-400">
-            还没有成长数据。
-            <br />
-            完成今天记录后，这里会显示你的 XP 趋势。
-          </p>
-        ) : (
-          <>
-            <XpChart records={dailyRecords} />
-            <WeeklySummary records={dailyRecords} />
-          </>
-        )}
-      </section>
-
-      <section className="mx-auto mb-4 w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-5">
-        <div className="mb-4">
-          <p className="text-xs font-medium text-zinc-500">历史回看</p>
-          <h2 className="mt-1 text-lg font-semibold">状态日历</h2>
-          <p className="mt-2 text-sm leading-6 text-zinc-400">
-            查看你过去每一天的人生 RPG 存档。
-          </p>
-        </div>
-
-        <CalendarView
-          viewMonthDate={viewMonthDate}
-          selectedDate={selectedDate}
-          todayKey={todayKey}
-          recordsByDate={recordsByDate}
-          onPreviousMonth={handlePreviousMonth}
-          onNextMonth={handleNextMonth}
-          onSelectDate={handleSelectDate}
-        />
-      </section>
-
-      <DayDetailCard
-        selectedDate={selectedDate}
-        record={selectedRecord}
-        allRecords={normalizedDailyRecords}
-      />
-
-      <section className="mx-auto w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-5">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold">人生成长记录</h1>
-          <p className="mt-2 text-sm text-zinc-400">记录今天，保持前进。</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <label className="block">
-            <span className="mb-2 block text-sm text-zinc-300">今天睡眠时间</span>
-            <input
-              className="w-full rounded-md border border-zinc-800 bg-black px-3 py-3 text-base text-white outline-none focus:border-zinc-500"
-              name="sleepHours"
-              type="number"
-              min="0"
-              step="0.5"
-              placeholder="例如：7.5 小时"
-              value={form.sleepHours}
-              onChange={handleChange}
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-sm text-zinc-300">今天健身多久</span>
-            <input
-              className="w-full rounded-md border border-zinc-800 bg-black px-3 py-3 text-base text-white outline-none focus:border-zinc-500"
-              name="workoutMinutes"
-              type="number"
-              min="0"
-              step="1"
-              placeholder="例如：45 分钟"
-              value={form.workoutMinutes}
-              onChange={handleChange}
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-sm text-zinc-300">今天手机使用时间</span>
-            <input
-              className="w-full rounded-md border border-zinc-800 bg-black px-3 py-3 text-base text-white outline-none focus:border-zinc-500"
-              name="phoneHours"
-              type="number"
-              min="0"
-              step="0.5"
-              placeholder="例如：3 小时"
-              value={form.phoneHours}
-              onChange={handleChange}
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-sm text-zinc-300">今天做了什么</span>
-            <textarea
-              className="min-h-28 w-full resize-none rounded-md border border-zinc-800 bg-black px-3 py-3 text-base text-white outline-none focus:border-zinc-500"
-              name="todayNote"
-              placeholder="简单写几句"
-              value={form.todayNote}
-              onChange={handleChange}
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-sm text-zinc-300">今天心情（1-10）</span>
-            <input
-              className="w-full rounded-md border border-zinc-800 bg-black px-3 py-3 text-base text-white outline-none focus:border-zinc-500"
-              name="mood"
-              type="number"
-              min="1"
-              max="10"
-              step="1"
-              placeholder="例如：8"
-              value={form.mood}
-              onChange={handleChange}
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-sm text-zinc-300">
-              成为男神的天数
-            </span>
-            <input
-              className="w-full rounded-md border border-zinc-800 bg-black px-3 py-3 text-base text-white outline-none focus:border-zinc-500"
-              name="noRewardDays"
-              type="number"
-              min="0"
-              step="1"
-              placeholder="例如：12"
-              value={form.noRewardDays}
-              onChange={handleChange}
-            />
-          </label>
-
-          <button
-            className="mt-2 w-full rounded-md bg-white px-4 py-3 text-base font-medium text-black"
-            type="submit"
-          >
-            保存今天
-          </button>
-
-          {saved && <p className="text-center text-sm text-zinc-300">今天已记录</p>}
-
-          <button
-            className="w-full rounded-md border border-zinc-700 px-4 py-3 text-base font-medium text-white"
-            type="button"
-            onClick={generateReview}
-          >
-            生成今日复盘
-          </button>
-        </form>
-      </section>
-
-      {reviewItems.length > 0 && (
-        <section className="mx-auto mt-4 w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-5">
-          <div className="mb-4">
-            <p className="text-xs font-medium text-zinc-500">
-              晚间复盘系统
+          {todayXpEarned !== null && (
+            <p className="mt-3 rounded-md border border-zinc-800 bg-black px-3 py-2 text-sm text-zinc-200">
+              今日获得 {todayXpEarned >= 0 ? "+" : ""}
+              {todayXpEarned} XP
             </p>
-            <h2 className="mt-1 text-lg font-semibold">今日状态分析</h2>
-          </div>
-
-          <div className="space-y-3">
-            {reviewItems.map((item) => (
-              <p
-                className="rounded-md border border-zinc-800 bg-black px-3 py-3 text-sm leading-6 text-zinc-200"
-                key={item}
-              >
-                {item}
-              </p>
-            ))}
-          </div>
+          )}
         </section>
       )}
+
+      {activePage === "status" && (
+        <>
+          {saved && todayXpEarned !== null && (
+            <DailySettlement
+              form={form}
+              xp={todayXpEarned}
+              totalXp={totalXp}
+              buffs={buffs}
+              debuffs={debuffs}
+            />
+          )}
+
+          <section className="mx-auto mb-4 w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-5">
+            <div className="mb-4">
+              <p className="text-xs font-medium text-zinc-500">今日状态 Buff</p>
+              <h2 className="mt-1 text-lg font-semibold">状态栏卡片</h2>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <div className="mb-2 flex items-center justify-between text-sm">
+                  <span className="text-zinc-300">当前 Buff</span>
+                  <span className="text-zinc-500">{buffs.length} 个</span>
+                </div>
+
+                <div className="space-y-2">
+                  {buffs.length === 0 && (
+                    <p className="rounded-md border border-zinc-800 bg-black px-3 py-3 text-sm text-zinc-500">
+                      暂无 Buff
+                    </p>
+                  )}
+
+                  {buffs.map((buff) => (
+                    <div
+                      className="rounded-md border border-emerald-800 bg-black px-3 py-3"
+                      key={buff.name}
+                    >
+                      <p className="text-sm font-medium text-emerald-200">
+                        {buff.name}
+                      </p>
+                      <p className="mt-1 text-sm text-zinc-400">
+                        {buff.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-2 flex items-center justify-between text-sm">
+                  <span className="text-zinc-300">当前 Debuff</span>
+                  <span className="text-zinc-500">{debuffs.length} 个</span>
+                </div>
+
+                <div className="space-y-2">
+                  {debuffs.length === 0 && (
+                    <p className="rounded-md border border-zinc-800 bg-black px-3 py-3 text-sm text-zinc-500">
+                      暂无 Debuff
+                    </p>
+                  )}
+
+                  {debuffs.map((debuff) => (
+                    <div
+                      className="rounded-md border border-red-900 bg-black px-3 py-3"
+                      key={debuff.name}
+                    >
+                      <p className="text-sm font-medium text-red-200">
+                        {debuff.name}
+                      </p>
+                      <p className="mt-1 text-sm text-zinc-400">
+                        {debuff.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        </>
+      )}
+
+      {activePage === "growth" && (
+        <section className="mx-auto w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-5">
+          <div className="mb-5">
+            <p className="text-xs font-medium text-zinc-500">XP 趋势面板</p>
+            <h2 className="mt-1 text-lg font-semibold">成长趋势</h2>
+          </div>
+
+          {dailyRecords.length === 0 ? (
+            <p className="rounded-md border border-zinc-800 bg-black px-3 py-4 text-sm leading-6 text-zinc-400">
+              还没有成长数据。
+              <br />
+              完成今天记录后，这里会显示你的 XP 趋势。
+            </p>
+          ) : (
+            <>
+              <XpChart records={dailyRecords} />
+              <WeeklySummary records={dailyRecords} />
+            </>
+          )}
+        </section>
+      )}
+
+      {activePage === "calendar" && (
+        <>
+          <section className="mx-auto mb-4 w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-5">
+            <div className="mb-4">
+              <p className="text-xs font-medium text-zinc-500">历史回看</p>
+              <h2 className="mt-1 text-lg font-semibold">状态日历</h2>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">
+                查看你过去每一天的人生 RPG 存档。
+              </p>
+            </div>
+
+            <CalendarView
+              viewMonthDate={viewMonthDate}
+              selectedDate={selectedDate}
+              todayKey={todayKey}
+              recordsByDate={recordsByDate}
+              onPreviousMonth={handlePreviousMonth}
+              onNextMonth={handleNextMonth}
+              onSelectDate={handleSelectDate}
+            />
+          </section>
+
+          <DayDetailCard
+            selectedDate={selectedDate}
+            record={selectedRecord}
+            allRecords={normalizedDailyRecords}
+          />
+        </>
+      )}
+
+      {activePage === "record" && (
+        <>
+          <section className="mx-auto w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-5">
+            <div className="mb-6">
+              <h1 className="text-2xl font-semibold">人生成长记录</h1>
+              <p className="mt-2 text-sm text-zinc-400">记录今天，保持前进。</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <label className="block">
+                <span className="mb-2 block text-sm text-zinc-300">今天睡眠时间</span>
+                <input
+                  className="w-full rounded-md border border-zinc-800 bg-black px-3 py-3 text-base text-white outline-none focus:border-zinc-500"
+                  name="sleepHours"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  placeholder="例如：7.5 小时"
+                  value={form.sleepHours}
+                  onChange={handleChange}
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm text-zinc-300">今天健身多久</span>
+                <input
+                  className="w-full rounded-md border border-zinc-800 bg-black px-3 py-3 text-base text-white outline-none focus:border-zinc-500"
+                  name="workoutMinutes"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="例如：45 分钟"
+                  value={form.workoutMinutes}
+                  onChange={handleChange}
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm text-zinc-300">今天手机使用时间</span>
+                <input
+                  className="w-full rounded-md border border-zinc-800 bg-black px-3 py-3 text-base text-white outline-none focus:border-zinc-500"
+                  name="phoneHours"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  placeholder="例如：3 小时"
+                  value={form.phoneHours}
+                  onChange={handleChange}
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm text-zinc-300">今天做了什么</span>
+                <textarea
+                  className="min-h-28 w-full resize-none rounded-md border border-zinc-800 bg-black px-3 py-3 text-base text-white outline-none focus:border-zinc-500"
+                  name="todayNote"
+                  placeholder="简单写几句"
+                  value={form.todayNote}
+                  onChange={handleChange}
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm text-zinc-300">今天心情（1-10）</span>
+                <input
+                  className="w-full rounded-md border border-zinc-800 bg-black px-3 py-3 text-base text-white outline-none focus:border-zinc-500"
+                  name="mood"
+                  type="number"
+                  min="1"
+                  max="10"
+                  step="1"
+                  placeholder="例如：8"
+                  value={form.mood}
+                  onChange={handleChange}
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm text-zinc-300">
+                  成为男神的天数
+                </span>
+                <input
+                  className="w-full rounded-md border border-zinc-800 bg-black px-3 py-3 text-base text-white outline-none focus:border-zinc-500"
+                  name="noRewardDays"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="例如：12"
+                  value={form.noRewardDays}
+                  onChange={handleChange}
+                />
+              </label>
+
+              <button
+                className="mt-2 w-full rounded-md bg-white px-4 py-3 text-base font-medium text-black"
+                type="submit"
+              >
+                保存今天
+              </button>
+
+              {saved && <p className="text-center text-sm text-zinc-300">今天已记录</p>}
+
+              <button
+                className="w-full rounded-md border border-zinc-700 px-4 py-3 text-base font-medium text-white"
+                type="button"
+                onClick={generateReview}
+              >
+                生成今日复盘
+              </button>
+            </form>
+          </section>
+
+          {reviewItems.length > 0 && (
+            <section className="mx-auto mt-4 w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-5">
+              <div className="mb-4">
+                <p className="text-xs font-medium text-zinc-500">
+                  晚间复盘系统
+                </p>
+                <h2 className="mt-1 text-lg font-semibold">今日状态分析</h2>
+              </div>
+
+              <div className="space-y-3">
+                {reviewItems.map((item) => (
+                  <p
+                    className="rounded-md border border-zinc-800 bg-black px-3 py-3 text-sm leading-6 text-zinc-200"
+                    key={item}
+                  >
+                    {item}
+                  </p>
+                ))}
+              </div>
+            </section>
+          )}
+        </>
+      )}
+
+      <MobileTabBar activePage={activePage} onChange={setActivePage} />
     </main>
   );
 }
