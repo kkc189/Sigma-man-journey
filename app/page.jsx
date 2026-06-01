@@ -8,7 +8,9 @@ import {
   StatusBadge,
   XPBar,
 } from "../components/ui";
+import { CalendarPage } from "../components/calendar-page";
 import { HomeDashboard } from "../components/home-dashboard";
+import { MyPage } from "../components/my-page";
 import { RecordPage } from "../components/record-page";
 
 const initialForm = {
@@ -1172,6 +1174,14 @@ export default function Home() {
 
   if (activePage === "record") {
     return <RecordPage onNavigate={setActivePage} />;
+  }
+
+  if (activePage === "calendar") {
+    return <CalendarPage onNavigate={setActivePage} />;
+  }
+
+  if (activePage === "status") {
+    return <MyPage onNavigate={setActivePage} />;
   }
 
   return (
