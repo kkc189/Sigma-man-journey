@@ -1,0 +1,8 @@
+{
+  "appId": "com.lifegrowth.record",
+  "appName": "男神进化日记",
+  "webDir": "out",
+  "server": {
+    "androidScheme": "https"
+  }
+}

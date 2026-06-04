@@ -4,20 +4,21 @@ import { useEffect, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
-  BarChart3,
   CalendarDays,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Dumbbell,
-  Frown,
   Home,
   Pen,
   Plus,
   Trash2,
-  Trophy,
   User,
 } from "lucide-react";
+import {
+  deleteDailyRecord,
+  loadDailyRecords,
+  updateUserStats,
+} from "../lib/records-store";
 
 const navItems = [
   { id: "home", label: "首页", Icon: Home },
@@ -28,73 +29,23 @@ const navItems = [
 
 const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
 
+const calendarBuffIconSrcs = [
+  "/calendar-buff-sleep.png",
+  "/calendar-buff-workout.png",
+  "/calendar-buff-focus.png",
+];
+
+const calendarDebuffIconSrcs = [
+  "/calendar-debuff-phone.png",
+  "/calendar-debuff-mood.png",
+];
+
 function getDateKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 function parseDateKey(dateKey) {
   return new Date(`${dateKey}T00:00:00`);
-}
-
-function safeParseJson(value, fallback) {
-  try {
-    return value ? JSON.parse(value) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function loadRecords() {
-  if (typeof window === "undefined") {
-    return {};
-  }
-
-  const saved = safeParseJson(localStorage.getItem("dailyRecords"), {});
-
-  if (Array.isArray(saved)) {
-    return saved.reduce((records, record) => {
-      if (record?.date) {
-        records[record.date] = record;
-      }
-
-      return records;
-    }, {});
-  }
-
-  return saved && typeof saved === "object" ? saved : {};
-}
-
-function saveRecords(records) {
-  localStorage.setItem("dailyRecords", JSON.stringify(records));
-  updateUserStats(records);
-}
-
-function updateUserStats(records) {
-  const todayKey = getDateKey(new Date());
-  const totalXp = Math.max(
-    0,
-    Object.values(records).reduce(
-      (sum, record) => sum + (Number(record?.xpGained ?? record?.xp) || 0),
-      0,
-    ),
-  );
-  let streakDays = 0;
-  const cursor = parseDateKey(todayKey);
-
-  while (records[getDateKey(cursor)]) {
-    streakDays += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-
-  localStorage.setItem(
-    "userStats",
-    JSON.stringify({
-      totalXp,
-      level: Math.max(1, Math.floor(totalXp / 1000) + 1),
-      streakDays,
-      updatedAt: new Date().toISOString(),
-    }),
-  );
 }
 
 function getMonthDays(monthDate) {
@@ -245,9 +196,26 @@ export function CalendarPage({ onNavigate }) {
   const weekTrend = getWeekTrend(records, selectedDateKey);
 
   useEffect(() => {
-    const nextRecords = loadRecords();
-    setRecords(nextRecords);
-    updateUserStats(nextRecords);
+    let cancelled = false;
+
+    async function refreshRecords() {
+      const nextRecords = await loadDailyRecords();
+
+      if (!cancelled) {
+        setRecords(nextRecords);
+        updateUserStats(nextRecords);
+      }
+    }
+
+    refreshRecords();
+    window.addEventListener("focus", refreshRecords);
+    window.addEventListener("daily-records-updated", refreshRecords);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", refreshRecords);
+      window.removeEventListener("daily-records-updated", refreshRecords);
+    };
   }, []);
 
   function changeMonth(direction) {
@@ -264,7 +232,7 @@ export function CalendarPage({ onNavigate }) {
     setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1));
   }
 
-  function deleteSelectedRecord() {
+  async function deleteSelectedRecord() {
     if (!selectedRecord) {
       return;
     }
@@ -275,9 +243,7 @@ export function CalendarPage({ onNavigate }) {
       return;
     }
 
-    const nextRecords = { ...records };
-    delete nextRecords[selectedDateKey];
-    saveRecords(nextRecords);
+    const nextRecords = await deleteDailyRecord(selectedDateKey);
     setRecords(nextRecords);
   }
 
@@ -332,7 +298,11 @@ function CalendarHeader({ onToday }) {
         type="button"
         onClick={onToday}
       >
-        <BarChart3 className="h-7 w-7" fill="#1677FF" strokeWidth={2.4} />
+        <img
+          alt=""
+          className="h-7 w-7 object-contain"
+          src="/calendar-header-chart.png"
+        />
       </button>
     </header>
   );
@@ -441,8 +411,12 @@ function MonthStats({ completion, continuousDays, onToday }) {
   return (
     <section className="mt-2.5 flex h-[60px] items-center rounded-[20px] border border-[#D8E9FF] bg-white px-5 shadow-[0_12px_30px_rgba(10,141,255,0.06)]">
       <button className="flex flex-1 items-center gap-3 text-left" type="button" onClick={onToday}>
-        <div className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-[#1677FF] text-white">
-          <CalendarDays className="h-6 w-6" fill="currentColor" strokeWidth={2.1} />
+        <div className="flex h-10 w-10 items-center justify-center">
+          <img
+            alt=""
+            className="h-9 w-9 object-contain"
+            src="/calendar-stat-streak.png"
+          />
         </div>
         <div>
           <p className="text-[14px] font-medium text-[#6B7890]">连续记录</p>
@@ -455,14 +429,11 @@ function MonthStats({ completion, continuousDays, onToday }) {
       <div className="h-9 w-px bg-[#DDEBFA]" />
 
       <div className="flex flex-1 items-center justify-center gap-3">
-        <div
-          className="relative h-10 w-10 rounded-full"
-          style={{
-            background: `conic-gradient(#1677FF 0 ${completion}%, #DDEBFA ${completion}% 100%)`,
-          }}
-        >
-          <div className="absolute inset-[6px] rounded-full bg-white" />
-        </div>
+        <img
+          alt=""
+          className="h-10 w-10 object-contain"
+          src="/calendar-stat-ring.png"
+        />
         <div>
           <p className="text-[14px] font-medium text-[#6B7890]">本月完成率</p>
           <p className="text-[23px] font-black leading-none text-[#1677FF]">{completion}%</p>
@@ -559,7 +530,11 @@ function DayArchiveCard({
         <div className="min-w-0">
           <p className="text-[13px] font-medium text-[#7A879E]">今日称号</p>
           <div className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#D8E9FF] bg-[#F3F8FF] px-2.5 py-1.5 text-[12px] font-black text-[#1677FF]">
-            <Trophy className="h-4 w-4 shrink-0" fill="currentColor" strokeWidth={2.2} />
+            <img
+              alt=""
+              className="h-4 w-4 shrink-0 object-contain"
+              src="/calendar-title-trophy.png"
+            />
             <span className="truncate">{getRecordTitle(record)}</span>
           </div>
         </div>
@@ -596,7 +571,7 @@ function ActionSnapshot({ record }) {
     ["饮食", `${record.nutritionScore ?? "-"} / 10`],
     ["手机", `${record.phoneHours ?? 0} 小时`],
     ["情绪", record.mood || "未记录"],
-    ["执行", `${record.completedActions ?? 0} 件`],
+    ["执行", getExecutionSnapshot(record)],
   ];
 
   return (
@@ -631,30 +606,27 @@ function EffectPanel({ title, type, items }) {
       </div>
 
       <div className="space-y-1.5">
-        {visibleItems.slice(0, 3).map((item) => (
-          <div
-            className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 rounded-[12px] border border-[#ECF3FF] bg-white px-1.5 py-1"
-            key={item}
-          >
-            <span
-              className={[
-                "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
-                isBuff ? "bg-[#DFF8EC] text-[#12B866]" : "bg-[#FFE8E8] text-[#F04141]",
-              ]
-                .filter(Boolean)
-                .join(" ")}
+        {visibleItems.slice(0, 3).map((item, index) => {
+          const iconSrc = isBuff
+            ? calendarBuffIconSrcs[index % calendarBuffIconSrcs.length]
+            : calendarDebuffIconSrcs[index % calendarDebuffIconSrcs.length];
+
+          return (
+            <div
+              className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-1.5 rounded-[12px] border border-[#ECF3FF] bg-white px-1.5 py-1"
+              key={`${item}-${index}`}
             >
-              {isBuff ? (
-                <Dumbbell className="h-4 w-4" strokeWidth={2.4} />
-              ) : (
-                <Frown className="h-4 w-4" strokeWidth={2.4} />
-              )}
-            </span>
-            <span className="min-w-0 truncate text-[11px] font-black leading-tight text-[#0D1B33]">
-              {item}
-            </span>
-          </div>
-        ))}
+              <img
+                alt=""
+                className="h-7 w-7 shrink-0 object-contain"
+                src={iconSrc}
+              />
+              <span className="min-w-0 truncate text-[11px] font-black leading-tight text-[#0D1B33]">
+                {item}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -669,7 +641,7 @@ function WeeklyTrend({ trendData = [] }) {
         <div className="relative h-[112px] overflow-hidden">
           <img
             alt="牛马角色"
-            className="absolute bottom-[-8px] left-[2px] h-[112px] w-[88px] object-contain object-bottom"
+            className="absolute bottom-[-6px] left-[-8px] h-[118px] w-[104px] object-contain object-bottom"
             src="/calendar-cow-cutout.png"
           />
         </div>
@@ -716,13 +688,52 @@ function WeeklyTrend({ trendData = [] }) {
         <div className="relative h-[112px] overflow-hidden">
           <img
             alt="疲惫马角色"
-            className="absolute bottom-[-4px] right-[3px] h-[108px] w-[88px] object-contain object-bottom"
+            className="absolute bottom-[-5px] right-[-8px] h-[112px] w-[104px] object-contain object-bottom"
             src="/calendar-horse-cutout.png"
           />
         </div>
       </div>
     </div>
   );
+}
+
+function getExecutionSnapshot(record) {
+  const executionItems = Array.isArray(record.executionItems)
+    ? record.executionItems
+        .map((item) => {
+          const title = String(item?.title || item?.task || item?.name || "").trim();
+          const minutes = Math.max(
+            0,
+            Number(item?.minutes ?? item?.durationMinutes ?? item?.executionMinutes) || 0,
+          );
+
+          return { title, minutes };
+        })
+        .filter((item) => item.title || item.minutes > 0)
+    : [];
+
+  if (executionItems.length > 0) {
+    const detail = executionItems
+      .map((item) =>
+        [item.title, item.minutes > 0 ? `${item.minutes} 分钟` : ""]
+          .filter(Boolean)
+          .join(" "),
+      )
+      .join(" / ");
+
+    return `${executionItems.length} 件 · ${detail}`;
+  }
+
+  const legacyDetail = [
+    record.executionTask?.trim() || "",
+    Number(record.executionMinutes) > 0 ? `${record.executionMinutes} 分钟` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return [`${record.completedActions ?? 0} 件`, legacyDetail]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 function CalendarBottomTabBar({ activePage, onNavigate }) {

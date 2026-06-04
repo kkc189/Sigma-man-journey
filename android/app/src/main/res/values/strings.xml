@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">男神进化日记</string>
+    <string name="title_activity_main">男神进化日记</string>
+    <string name="package_name">com.lifegrowth.record</string>
+    <string name="custom_url_scheme">com.lifegrowth.record</string>
+</resources>

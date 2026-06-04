@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>同跑排名动效模拟</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 50% 0%, rgba(22, 119, 255, 0.18), transparent 34%),
+          #eef6ff;
+        color: #0d1b33;
+        display: grid;
+        place-items: center;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .phone {
+        width: min(430px, 100vw);
+        min-height: 100vh;
+        background: white;
+        padding: 18px;
+        box-shadow: 0 24px 80px rgba(10, 141, 255, 0.16);
+      }
+
+      h1 {
+        margin: 8px 0 6px;
+        font-size: 26px;
+        line-height: 1.1;
+      }
+
+      .subtitle {
+        margin: 0 0 14px;
+        color: #60728a;
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .summary {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .card {
+        border: 1px solid #d8e9ff;
+        border-radius: 18px;
+        background: #f8fbff;
+        padding: 12px;
+      }
+
+      .label {
+        font-size: 12px;
+        font-weight: 800;
+        color: #60728a;
+      }
+
+      .value {
+        margin-top: 4px;
+        font-size: 20px;
+        font-weight: 950;
+        color: #1677ff;
+      }
+
+      .replay {
+        margin-bottom: 14px;
+        border: 1px solid #d8e9ff;
+        border-radius: 20px;
+        background: #fbfdff;
+        padding: 12px;
+      }
+
+      .replay-top {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .replay-title {
+        font-size: 14px;
+        font-weight: 950;
+      }
+
+      .replay-time {
+        margin-top: 2px;
+        color: #60728a;
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .replay button {
+        height: 36px;
+        border: 0;
+        border-radius: 999px;
+        background: #1677ff;
+        color: white;
+        padding: 0 14px;
+        font-weight: 950;
+      }
+
+      .track {
+        position: relative;
+        height: 8px;
+        margin-top: 12px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #e4eefc;
+      }
+
+      .track-fill {
+        width: 0%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #13b866, #f7c948, #e22323);
+        transition: width 0.22s ease;
+      }
+
+      .map {
+        position: relative;
+        height: 360px;
+        overflow: hidden;
+        border: 1px solid #cde4ff;
+        border-radius: 22px;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.72), rgba(234,244,255,0.24)),
+          linear-gradient(90deg, rgba(22, 119, 255, 0.08) 1px, transparent 1px),
+          linear-gradient(0deg, rgba(22, 119, 255, 0.08) 1px, transparent 1px),
+          #eaf4ff;
+        background-size: 28px 28px;
+      }
+
+      svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      .route {
+        fill: none;
+        stroke: #9ccbff;
+        stroke-width: 7;
+        stroke-linecap: round;
+        stroke-dasharray: 10 12;
+      }
+
+      .leader-route {
+        fill: none;
+        stroke: #ff4d4f;
+        stroke-width: 5;
+        stroke-linecap: round;
+        filter: drop-shadow(0 3px 4px rgba(226, 35, 35, 0.28));
+      }
+
+      .second-route {
+        fill: none;
+        stroke: #13b866;
+        stroke-width: 5;
+        stroke-linecap: round;
+        filter: drop-shadow(0 3px 4px rgba(19, 184, 102, 0.22));
+      }
+
+      @keyframes leader-run {
+        0% {
+          transform: translate(0, 0);
+        }
+        50% {
+          transform: translate(18px, -16px);
+        }
+        100% {
+          transform: translate(36px, -32px);
+        }
+      }
+
+      @keyframes second-run {
+        0% {
+          transform: translate(0, 0);
+        }
+        50% {
+          transform: translate(14px, -8px);
+        }
+        100% {
+          transform: translate(26px, -14px);
+        }
+      }
+
+      @keyframes leader-pulse {
+        0% {
+          opacity: 0.72;
+          transform: scale(0.82);
+        }
+        70% {
+          opacity: 0.1;
+          transform: scale(1.95);
+        }
+        100% {
+          opacity: 0;
+          transform: scale(2.16);
+        }
+      }
+
+      @keyframes ghost {
+        0% {
+          opacity: 0.55;
+          transform: translate(0, 0) scale(1);
+        }
+        100% {
+          opacity: 0;
+          transform: translate(-26px, 18px) scale(0.68);
+        }
+      }
+
+      .leader {
+        transition: transform 0.32s ease;
+      }
+
+      .second {
+        transition: transform 0.32s ease;
+      }
+
+      .pulse {
+        animation: leader-pulse 1.35s ease-out infinite;
+        transform-box: fill-box;
+        transform-origin: center;
+      }
+
+      .ghost-a {
+        animation: ghost 1.05s ease-out infinite;
+      }
+
+      .ghost-b {
+        animation: ghost 1.05s ease-out 0.32s infinite;
+      }
+
+      .rank {
+        font-size: 13px;
+        font-weight: 950;
+        text-anchor: middle;
+        dominant-baseline: central;
+      }
+
+      .initial {
+        font-size: 13px;
+        font-weight: 950;
+        fill: white;
+        text-anchor: middle;
+        dominant-baseline: central;
+      }
+
+      .leader .initial {
+        fill: white;
+      }
+
+      .stats {
+        margin-top: 14px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .runner {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 10px;
+        align-items: center;
+        border: 1px solid #e8f1ff;
+        border-radius: 16px;
+        padding: 10px;
+      }
+
+      .runner.lead {
+        border-color: #ffe084;
+        background: #fff9d8;
+        box-shadow: 0 8px 18px rgba(245, 158, 11, 0.16);
+      }
+
+      .avatar {
+        width: 34px;
+        height: 34px;
+        display: grid;
+        place-items: center;
+        border-radius: 999px;
+        color: white;
+        font-weight: 950;
+      }
+
+      .lead .avatar {
+        color: #0d1b33;
+        background: #ffd43b;
+      }
+
+      .name {
+        font-size: 13px;
+        font-weight: 950;
+      }
+
+      .distance {
+        margin-top: 2px;
+        font-size: 11px;
+        font-weight: 800;
+        color: #60728a;
+      }
+
+      .speed {
+        border-radius: 999px;
+        background: #f0f7ff;
+        color: #1677ff;
+        padding: 6px 8px;
+        font-size: 12px;
+        font-weight: 950;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="phone">
+      <h1>同跑排名动效模拟</h1>
+      <p class="subtitle">跑完后可以回放每一帧的时速、名次和距离。</p>
+
+      <section class="summary">
+        <div class="card">
+          <div class="label">当前第一</div>
+          <div class="value" id="leaderMetric">你 · 11.8 km/h</div>
+        </div>
+        <div class="card">
+          <div class="label">当前第二</div>
+          <div class="value" id="secondMetric">朋友 · 8.4 km/h</div>
+        </div>
+      </section>
+
+      <section class="replay">
+        <div class="replay-top">
+          <div>
+            <div class="replay-title">跑步回放</div>
+            <div class="replay-time" id="replayTime">00:00 · 第 1 / 6 帧</div>
+          </div>
+          <button id="playButton" type="button">播放</button>
+        </div>
+        <div class="track">
+          <div class="track-fill" id="trackFill"></div>
+        </div>
+      </section>
+
+      <section class="map">
+        <svg viewBox="0 0 360 360" aria-label="同跑排名动效地图">
+          <path class="route" d="M44 305 C86 250 124 264 148 212 C172 160 216 182 254 120 C276 84 304 66 330 42" />
+          <path class="second-route" d="M54 315 C94 276 126 284 152 236 C178 190 212 202 238 164" />
+          <path class="leader-route" d="M50 300 C90 248 122 258 150 210 C178 162 214 178 252 120 C276 84 304 66 330 42" />
+
+          <g class="second" id="secondRunner">
+            <rect x="174" y="175" width="34" height="18" rx="9" fill="#0d1b33" stroke="white" stroke-width="2" />
+            <text class="rank" x="191" y="184" fill="white">2nd</text>
+            <circle cx="191" cy="210" r="14" fill="#13b866" stroke="white" stroke-width="4" />
+            <text class="initial" x="191" y="210">友</text>
+          </g>
+
+          <g class="leader" id="leaderRunner">
+            <circle class="pulse" cx="250" cy="126" r="22" fill="#ffd43b" stroke="white" stroke-width="2" />
+            <circle class="ghost-a" cx="238" cy="134" r="11" fill="#ffd43b" opacity="0.42" />
+            <circle class="ghost-b" cx="230" cy="140" r="9" fill="#ff4d4f" opacity="0.36" />
+            <rect x="232" y="88" width="36" height="18" rx="9" fill="#ffd43b" stroke="white" stroke-width="2" />
+            <text class="rank" x="250" y="97" fill="#0d1b33">1st</text>
+            <circle cx="250" cy="126" r="17" fill="#ffd43b" stroke="white" stroke-width="4" />
+            <circle cx="250" cy="126" r="12" fill="#ff4d4f" />
+            <text class="initial" x="250" y="126">你</text>
+          </g>
+        </svg>
+      </section>
+
+      <section class="stats">
+        <div class="runner lead">
+          <div class="avatar">你</div>
+          <div>
+            <div class="name">1st. 你</div>
+            <div class="distance" id="leaderDistance">2.13 km · 领先中</div>
+          </div>
+          <div class="speed" id="leaderSpeed">11.8 km/h</div>
+        </div>
+        <div class="runner">
+          <div class="avatar" style="background:#13b866;">友</div>
+          <div>
+            <div class="name">2nd. 朋友</div>
+            <div class="distance" id="secondDistance">1.92 km · 追赶中</div>
+          </div>
+          <div class="speed" id="secondSpeed">8.4 km/h</div>
+        </div>
+      </section>
+    </main>
+    <script>
+      const frames = [
+        { time: "00:00", leaderSpeed: 8.6, secondSpeed: 8.1, leaderDistance: 0.18, secondDistance: 0.17, leaderX: 0, leaderY: 0, secondX: 0, secondY: 0 },
+        { time: "01:12", leaderSpeed: 9.4, secondSpeed: 8.6, leaderDistance: 0.42, secondDistance: 0.39, leaderX: 8, leaderY: -8, secondX: 5, secondY: -4 },
+        { time: "02:28", leaderSpeed: 11.8, secondSpeed: 8.4, leaderDistance: 0.91, secondDistance: 0.76, leaderX: 17, leaderY: -16, secondX: 10, secondY: -7 },
+        { time: "03:42", leaderSpeed: 10.7, secondSpeed: 9.1, leaderDistance: 1.36, secondDistance: 1.11, leaderX: 24, leaderY: -22, secondX: 17, secondY: -10 },
+        { time: "05:05", leaderSpeed: 12.3, secondSpeed: 9.8, leaderDistance: 1.78, secondDistance: 1.52, leaderX: 31, leaderY: -28, secondX: 23, secondY: -13 },
+        { time: "06:20", leaderSpeed: 11.8, secondSpeed: 8.4, leaderDistance: 2.13, secondDistance: 1.92, leaderX: 36, leaderY: -32, secondX: 26, secondY: -14 },
+      ];
+
+      let frameIndex = 0;
+      let playing = false;
+      let timer = null;
+
+      const leaderMetric = document.getElementById("leaderMetric");
+      const secondMetric = document.getElementById("secondMetric");
+      const leaderSpeed = document.getElementById("leaderSpeed");
+      const secondSpeed = document.getElementById("secondSpeed");
+      const leaderDistance = document.getElementById("leaderDistance");
+      const secondDistance = document.getElementById("secondDistance");
+      const replayTime = document.getElementById("replayTime");
+      const trackFill = document.getElementById("trackFill");
+      const playButton = document.getElementById("playButton");
+      const leaderRunner = document.getElementById("leaderRunner");
+      const secondRunner = document.getElementById("secondRunner");
+
+      function renderFrame() {
+        const frame = frames[frameIndex];
+        const progress = (frameIndex / (frames.length - 1)) * 100;
+
+        leaderMetric.textContent = `你 · ${frame.leaderSpeed.toFixed(1)} km/h`;
+        secondMetric.textContent = `朋友 · ${frame.secondSpeed.toFixed(1)} km/h`;
+        leaderSpeed.textContent = `${frame.leaderSpeed.toFixed(1)} km/h`;
+        secondSpeed.textContent = `${frame.secondSpeed.toFixed(1)} km/h`;
+        leaderDistance.textContent = `${frame.leaderDistance.toFixed(2)} km · 领先中`;
+        secondDistance.textContent = `${frame.secondDistance.toFixed(2)} km · 追赶中`;
+        replayTime.textContent = `${frame.time} · 第 ${frameIndex + 1} / ${frames.length} 帧`;
+        trackFill.style.width = `${progress}%`;
+        leaderRunner.style.transform = `translate(${frame.leaderX}px, ${frame.leaderY}px)`;
+        secondRunner.style.transform = `translate(${frame.secondX}px, ${frame.secondY}px)`;
+      }
+
+      function startPlayback() {
+        playing = true;
+        playButton.textContent = "暂停";
+        timer = window.setInterval(() => {
+          frameIndex = frameIndex >= frames.length - 1 ? 0 : frameIndex + 1;
+          renderFrame();
+        }, 720);
+      }
+
+      function stopPlayback() {
+        playing = false;
+        playButton.textContent = "播放";
+        window.clearInterval(timer);
+      }
+
+      playButton.addEventListener("click", () => {
+        if (playing) {
+          stopPlayback();
+        } else {
+          startPlayback();
+        }
+      });
+
+      renderFrame();
+    </script>
+  </body>
+</html>
